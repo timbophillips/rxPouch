@@ -1,0 +1,19 @@
+{
+  "name": "sand2",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/pouchdb": "^6.3.2",
+    "chalk": "^2.4.1",
+    "json-colorizer": "^1.1.1",
+    "pouchdb": "^7.0.0",
+    "pouchdb-browser": "^7.0.0",
+    "rxjs": "^6.3.3"
+  }
+}
