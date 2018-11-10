@@ -9,8 +9,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@types/detect-node": "^2.0.0",
     "@types/pouchdb": "^6.3.2",
     "chalk": "^2.4.1",
+    "detect-node": "^2.0.4",
     "json-colorizer": "^1.1.1",
     "pouchdb": "^7.0.0",
     "pouchdb-browser": "^7.0.0",

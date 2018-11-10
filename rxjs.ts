@@ -3,7 +3,6 @@ import { beautifulJSON } from "./beautifulJSON";
 import { Observable, BehaviorSubject, fromEvent, from, forkJoin, of } from 'rxjs';
 import { map, catchError, pluck, mergeMap } from 'rxjs/operators';
 
-
 const local = new PouchDB('tasks');
 const remote = new PouchDB('http://localhost:5984/tasks');
 
