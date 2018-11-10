@@ -70,8 +70,9 @@ class rxPouch {
   }
 }
 
-let z = new rxPouch("http://localhost:5984/tim");
 
+/// test code
+let z = new rxPouch("http://localhost:5984/tim");
 z.rxDocs.subscribe(x => {
   console.clear();
   console.log(beautifulJSON(x));
