@@ -15,12 +15,14 @@ class rxPouch {
   private _sync: any;
 
   constructor(remoteCouchDB?: string) {
+    // use either the provided address or a default
     this._remoteAddress = remoteCouchDB || "http://localhost:5984/delete_me";
-
     // JS trickery to get last bit of URL
     // (which is the database name)
     let parts = this._remoteAddress.split("/");
     this._localName = parts.pop() || parts.pop(); // handle potential trailing slash
+    // if this is running in NodeJS then put in subfolder
+    // not essential just being tidy
     if (isNode) {
       this._localName = "pouchdb-data/" + this._localName;
     }
