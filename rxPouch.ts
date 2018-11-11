@@ -87,7 +87,7 @@ class rxPouch {
       return from(
         this._localDB.allDocs({
           include_docs: true,
-          attachments: true
+          attachments: false
         })
       ).pipe(
         pluck("rows"),
@@ -125,6 +125,8 @@ class rxPouch {
 
   get rxDocs(): Observable<any> {
     return this._changes$.pipe(
+      // so that it fires once when subscribed to
+      // then fires on _changes$ stream
       merge(of(0)),
       mergeMap(x => this._allDocs$()),
       distinctUntilChanged()
@@ -133,6 +135,8 @@ class rxPouch {
 
   get rxSync(): Observable<number | {}> {
     return this._paused$.pipe(
+      // so that it fires once when subscribed to
+      // then fires on paused$ stream
       merge(of(0)),
       mergeMap(x => this._syncCheck$()),
       distinctUntilChanged()
@@ -141,11 +145,13 @@ class rxPouch {
 }
 
 /// test code
-let z = new rxPouch("http://localhost:5984/tim");
+
+// instantiate the class
+let z = new rxPouch("http://localhost:5984/tasks");
 console.log("started...");
 
-// show the dosc and the sync code in the console
-// when either streams update the console for both 
+// show the docs and the sync code in the console
+// when either streams update the console for both
 combineLatest(z.rxDocs, z.rxSync).subscribe(([docs, sync]) => {
   console.clear();
   console.log(beautifulJSON(docs));
