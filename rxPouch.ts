@@ -80,7 +80,7 @@ class rxPouch {
       merge(interval(5000)),
       // this also prevents febrile
       // firing from all of the listeners at once
-      debounceTime(2000)
+      debounceTime(1000)
     );
 
     this._ObservableAllDocs = (): Observable<any> => {
@@ -144,6 +144,8 @@ class rxPouch {
 let z = new rxPouch("http://localhost:5984/tim");
 console.log("started...");
 
+// show the dosc and the sync code in the console
+// when either streams update the console for both 
 combineLatest(z.rxDocs, z.rxSync).subscribe(([docs, sync]) => {
   console.clear();
   console.log(beautifulJSON(docs));
