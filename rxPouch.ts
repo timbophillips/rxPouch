@@ -27,12 +27,12 @@ class rxPouch {
   private _localName: string | undefined;
   private _remoteDB: any;
   private _localDB: any;
-  private _ObservableAllDocs: any;
-  private _ObservableChanges: Observable<any>;
-  private _ObservablePaused: Observable<any>;
+  private _allDocs$: any;
+  private _changes$: Observable<any>;
+  private _paused$: Observable<any>;
   private _syncUp: any;
   private _syncDown: any;
-  private _ObservableSync: any;
+  private _syncCheck$: any;
 
   constructor(remoteCouchDB?: string) {
     // use either the provided address or a default
@@ -60,7 +60,7 @@ class rxPouch {
       retry: true
     });
 
-    this._ObservableChanges = fromEvent(
+    this._changes$ = fromEvent(
       this._localDB.changes({
         since: "now",
         live: true,
@@ -69,8 +69,8 @@ class rxPouch {
       "change"
     );
 
-    this._ObservablePaused = fromEvent(this._syncUp, "paused").pipe(
-      merge(this._ObservableChanges),
+    this._paused$ = fromEvent(this._syncUp, "paused").pipe(
+      merge(this._changes$),
       merge(fromEvent(this._syncUp, "active")),
       merge(fromEvent(this._syncDown, "paused")),
       merge(fromEvent(this._syncDown, "active")),
@@ -83,7 +83,7 @@ class rxPouch {
       debounceTime(1000)
     );
 
-    this._ObservableAllDocs = (): Observable<any> => {
+    this._allDocs$ = (): Observable<any> => {
       return from(
         this._localDB.allDocs({
           include_docs: true,
@@ -101,7 +101,7 @@ class rxPouch {
     // check if local and remote database are online and in sync
     // returns -1 if offline, >0  for sync. (1 = 100%)
     // -2 is some other error returned by PouchDb info
-    this._ObservableSync = (): Observable<number | {}> => {
+    this._syncCheck$ = (): Observable<number | {}> => {
       // return of("the _ObservableSync has been triggeres");
       // return from(this._localDB.info());
       // if both objects exist then make a Promise from their info() methods
@@ -124,17 +124,17 @@ class rxPouch {
   }
 
   get rxDocs(): Observable<any> {
-    return this._ObservableChanges.pipe(
+    return this._changes$.pipe(
       merge(of(0)),
-      mergeMap(x => this._ObservableAllDocs()),
+      mergeMap(x => this._allDocs$()),
       distinctUntilChanged()
     );
   }
 
   get rxSync(): Observable<number | {}> {
-    return this._ObservablePaused.pipe(
+    return this._paused$.pipe(
       merge(of(0)),
-      mergeMap(x => this._ObservableSync()),
+      mergeMap(x => this._syncCheck$()),
       distinctUntilChanged()
     );
   }
