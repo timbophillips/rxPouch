@@ -1,4 +1,5 @@
 import PouchDB from "pouchdb";
+import PouchFind from "pouchdb-find";
 import { beautifulJSON } from "./beautifulJSON";
 import {
   Observable,
@@ -34,13 +35,22 @@ class rxPouch {
   private _syncDown: any;
   private _syncCheck$: any;
 
-  constructor(remoteCouchDB?: string) {
+  constructor(
+    remoteCouchDB?: string,
+    mangoIndex?: PouchDB.Find.CreateIndexOptions,
+    mangoSelector?: PouchDB.Find.Selector
+  ) {
+    // hook up the pouchdb find plugin (mango queries)
+    PouchDB.plugin(PouchFind);
+
     // use either the provided address or a default
     this._remoteAddress = remoteCouchDB || "http://localhost:5984/delete_me";
+
     // JS trickery to get last bit of URL
     // (which is the database name)
     let parts = this._remoteAddress.split("/");
     this._localName = parts.pop() || parts.pop(); // handle potential trailing slash
+
     // if this is running in NodeJS then put in subfolder
     // not essential just being tidy
     if (isNode) {
@@ -50,14 +60,28 @@ class rxPouch {
     this._remoteDB = new PouchDB(this._remoteAddress);
     this._localDB = new PouchDB(this._localName);
 
+    if (mangoSelector) {
+      this._localDB.createIndex(mangoIndex);
+      console.log("index done");
+      this._localDB.find({
+        selector: mangoSelector
+      });
+      this._remoteDB.find({
+        selector: mangoSelector
+      });
+      console.log(mangoIndex + " | " + mangoSelector);
+    }
+
     this._syncDown = PouchDB.replicate(this._remoteDB, this._localDB, {
       live: true,
-      retry: true
+      retry: true,
+      selector: mangoSelector
     });
 
     this._syncUp = PouchDB.replicate(this._localDB, this._remoteDB, {
       live: true,
-      retry: true
+      retry: true,
+      selector: mangoSelector
     });
 
     this._changes$ = fromEvent(
@@ -93,7 +117,7 @@ class rxPouch {
         pluck("rows"),
         map(x => {
           let y = x as Array<any>;
-          return y.map(value => value["doc"]);
+          return y.map(z => z["doc"]).filter(a => a._id.substr(0, 2) !== "_d");
         })
       );
     };
@@ -142,18 +166,50 @@ class rxPouch {
       distinctUntilChanged()
     );
   }
+
+  get log(): Observable<{}> {
+    // return a JSON object the current docs
+    // and the current sync code
+    // when either streams updates
+    return combineLatest(z.rxDocs, z.rxSync).pipe(
+      mergeMap(x => {
+        let syncText = "";
+        switch (true) {
+          case x[1] < 0:
+            syncText = "offline";
+            break;
+          case x[1] === 1:
+            syncText = "online and in sync";
+            break;
+          case x[1] > 1:
+            syncText = "uploading";
+            break;
+          default:
+            syncText = "downloading";
+            break;
+        }
+        return of<{}>({
+          docs: x[0],
+          "sync code": x[1].toString(),
+          "sync description": syncText
+        });
+      })
+    );
+  }
 }
 
 /// test code
 
 // instantiate the class
-let z = new rxPouch("http://localhost:5984/tasks");
+console.log("new rxPouch.... which I think must be synchronous code");
+let z = new rxPouch(
+  "http://localhost:5984/tasks",
+  // { index: { fields: ["patient_name"] } },
+  // { patient_name: "uuuusss" }
+);
 console.log("started...");
 
-// show the docs and the sync code in the console
-// when either streams update the console for both
-combineLatest(z.rxDocs, z.rxSync).subscribe(([docs, sync]) => {
+z.log.subscribe(x => {
   console.clear();
-  console.log(beautifulJSON(docs));
-  console.log("sync code: " + sync.toString());
+  console.log(beautifulJSON(x));
 });

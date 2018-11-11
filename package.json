@@ -16,6 +16,7 @@
     "json-colorizer": "^1.1.1",
     "pouchdb": "^7.0.0",
     "pouchdb-browser": "^7.0.0",
+    "pouchdb-find": "^7.0.0",
     "rxjs": "^6.3.3"
   }
 }
