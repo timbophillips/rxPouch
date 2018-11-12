@@ -83,7 +83,7 @@ const testFindAndDeleteThem = () => {
                     // log the output from the index
                     console.log(beautifulJSON(x));
                     // now star the find observable
-                    return z.findDocs({ selector: { name: { $regex: '^another' } } })
+                    return z.findDocs({ selector: { name: { $regex: '^not' } } })
                 }),
             // we just want the _ids
             concatMap(y => {
@@ -96,11 +96,10 @@ const testFindAndDeleteThem = () => {
 }
 
 setTimeout(testPut, 500, {
-    name: 'yet another batch of new ones created 500ms after start'
+    name: 'yes another batch of new ones created 500ms after start'
 });
 
 setTimeout(testCreateThenDelete, 2000);
 
 setTimeout(testFindAndDeleteThem, 5000)
-
 

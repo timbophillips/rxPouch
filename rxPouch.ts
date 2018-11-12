@@ -185,51 +185,64 @@ export class rxPouch {
     );
   }
 
+  // return a JSON object the current docs
+  // and the current sync number and status
+  // when either streams updates
   get log(): Observable<{}> {
-    // return a JSON object the current docs
-    // and the current sync code
-    // when either streams updates
-    return combineLatest(this.rxDocs, this.rxSync).pipe(
-      mergeMap(x => {
-        let syncText = "";
-        switch (true) {
-          case x[1] < 0:
-            syncText = "offline";
-            break;
-          case x[1] === 1:
-            syncText = "online and in sync";
-            break;
-          case x[1] > 1:
-            syncText = "uploading";
-            break;
-          default:
-            syncText = "downloading";
-            break;
-        }
-        return of<{}>({
-          docs: x[0],
-          "sync code": x[1].toString(),
-          "sync description": syncText
-        });
-      })
-    );
+    // combineLatest will emit the latest of each
+    // whenever either of them updates
+    return combineLatest(this.rxDocs, this.rxSync)
+      .pipe(
+        mergeMap(x => {
+          // human readable text to explain sync number
+          let syncText = "remote couchDB ";
+          switch (true) {
+            case x[1] < 0:
+              syncText += "offline";
+              break;
+            case x[1] === 1:
+              syncText += "online and in sync";
+              break;
+            case x[1] > 1:
+              syncText += "uploading";
+              break;
+            default:
+              syncText += "downloading";
+              break;
+          }
+          // assemble a nice JSON object that
+          // has the docs and then the sync stuff
+          return of<{}>({
+            docs: x[0],
+            "sync code": x[1].toString(),
+            "sync description": syncText
+          });
+        })
+      );
   }
 
   putDoc = (doc: any): Observable<any> => {
+    // add a random uuid as the _id if none supplied
     if (!doc._id) { doc._id = v4(); }
-    return from(this._localDB.put(JSON.parse(JSON.stringify(doc))))
+    return from(this._localDB.put(
+      // this bit to guard against funny
+      // stuff being supplied that isnt 
+      // JSON compliant
+      JSON.parse(JSON.stringify(doc))
+    ))
   };
 
+  // straight conversion and re-issue of the PouchDB promise
   getDoc = (_id: string): Observable<any> =>
     from(this._localDB.get(_id));
 
   deleteDoc = (_id: string): Observable<any> => {
+    // grab the document
     return this.getDoc(_id)
       .pipe(
-        map(docToDelete => {
-          if (!docToDelete.error) { docToDelete._deleted = true }
-          return docToDelete;
-        }),
+        // add the _deleted flag to the document
+        map(docToDelete => Object.assign(docToDelete, { _deleted: true })),
+        // put this flagged document (Pouch/Couch will delete it)
         concatMap(docFlagged => this.putDoc(docFlagged))
       );
   }
