@@ -213,7 +213,7 @@ export class rxPouch {
           // assemble a nice JSON object that
           // has the docs and then the sync stuff
           return of<{}>({
-            docs: x[0],
+            "PouchDB docs array": x[0],
             "sync code": x[1].toString(),
             "sync description": syncText
           });

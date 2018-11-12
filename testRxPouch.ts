@@ -81,7 +81,7 @@ const testFindAndDeleteThem = () => {
             concatMap(
                 x => {
                     // log the output from the index
-                    console.log(beautifulJSON(x));
+                    console.log(beautifulJSON({ "mango index creation output": x }));
                     // now star the find observable
                     return z.findDocs({ selector: { name: { $regex: '^not' } } })
                 }),
