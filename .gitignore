@@ -62,3 +62,6 @@ typings/
 
 # the temp folder for pouchdb
 pouchdb-data/
+
+# compiled js files
+.js

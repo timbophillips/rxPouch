@@ -22,6 +22,7 @@ import {
   distinctUntilChanged
 } from "rxjs/operators";
 import * as isNode from "detect-node";
+import {v4} from 'uuid';
 
 class rxPouch {
   private _remoteAddress: string;
@@ -203,6 +204,12 @@ class rxPouch {
       })
     );
   }
+
+
+  putDoc = (doc: any): Observable<any> => {
+    if (!doc._id) { doc._id = v4(); }
+    return from(this._localDB.put(JSON.parse(JSON.stringify(doc))));
+  }
 }
 
 /// test code
@@ -220,3 +227,12 @@ z.log.subscribe(x => {
   console.clear();
   console.log(beautifulJSON(x));
 });
+
+const testPut = (doc: object) => {
+  z.putDoc(doc).subscribe(x => console.log(beautifulJSON(x)))
+}
+
+setTimeout(testPut, 10000, {
+  name: 'Tim Phillips'
+});
+
