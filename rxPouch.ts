@@ -87,6 +87,14 @@ export class rxPouch {
       selector: mangoSelector
     });
 
+    // log replication errors
+    fromEvent(this._syncUp, 'error')
+      .pipe(
+        merge(fromEvent(this._syncDown, 'error')),
+        delay(5000),
+      )
+      .subscribe(x => console.log(beautifulJSON(x)));
+
     this._changes$ = fromEvent(
       this._localDB.changes({
         since: "now",
@@ -95,14 +103,6 @@ export class rxPouch {
       }),
       "change"
     );
-
-    // log replication errors
-    fromEvent(this._syncUp, 'error')
-      .pipe(
-        merge(fromEvent(this._syncDown, 'error')),
-        delay(5000),
-      )
-      .subscribe(x => console.log(beautifulJSON(x)));
 
     this._paused$ = fromEvent(this._syncUp, "paused").pipe(
       merge(this._changes$),
@@ -125,11 +125,16 @@ export class rxPouch {
           attachments: false
         })
       ).pipe(
+        // just the rows
         pluck("rows"),
-        map(x => {
-          // let y = x as Array<any>;
-          return (x as Array<any>).map(z => z["doc"]).filter(a => a._id.substr(0, 2) !== "_d");
-        })
+        // just the docs
+        map(x =>
+          (x as Array<any>)
+            //just the docs
+            .map(z => z["doc"])
+            //filter out any views / indices
+            .filter(a => a._id.substr(0, 2) !== "_d")
+        )
       );
     };
 
@@ -137,24 +142,26 @@ export class rxPouch {
     // returns -1 if offline, >0  for sync. (1 = 100%)
     // -2 is some other error returned by PouchDb info
     this._syncCheck$ = (): Observable<number | {}> => {
-      // return of("the _ObservableSync has been triggeres");
-      // return from(this._localDB.info());
-      // if both objects exist then make a Promise from their info() methods
+      // if both objects exist then make an Observable from their info() methods
       return forkJoin(this._localDB.info(), this._remoteDB.info())
         .pipe(
           // in NodeJS _remoteDB.info will not complete promise if offline
           // treat anything that takes more than a second as offline
           timeout(1000),
+          // forkjoin spits out an array of the two results
           map(x => {
             const y = x as Array<any>;
             if (y[0].doc_count && y[1].doc_count) {
+              // return the ratio of local : remote doc count
               return y[0].doc_count / y[1].doc_count;
             } else {
+              //must be offline
               return -1;
             }
-          })
-        )
-        .pipe(catchError((error, caught) => of(-2)));
+          }),
+          // some other error also means offline
+          catchError((error, caught) => of(-2))
+        );
     };
   }
 
@@ -213,9 +220,8 @@ export class rxPouch {
     return from(this._localDB.put(JSON.parse(JSON.stringify(doc))))
   };
 
-  getDoc = (_id: string): Observable<any> => {
-    return from(this._localDB.get(_id))
-  }
+  getDoc = (_id: string): Observable<any> =>
+    from(this._localDB.get(_id));
 
   deleteDoc = (_id: string): Observable<any> => {
     return this.getDoc(_id)
