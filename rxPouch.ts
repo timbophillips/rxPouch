@@ -1,5 +1,5 @@
 import PouchDB from "pouchdb";
-import PouchfindDocs from "pouchdb-findDocs";
+import PouchFind from "pouchdb-find";
 import { beautifulJSON } from "./beautifulJSON";
 import {
   Observable,
@@ -42,11 +42,11 @@ export class rxPouch {
 
   constructor(
     remoteCouchDB?: string,
-    mangoIndex?: PouchDB.findDocs.CreateIndexOptions,
-    mangoSelector?: PouchDB.findDocs.Selector
+    mangoIndex?: PouchDB.Find.CreateIndexOptions,
+    mangoSelector?: PouchDB.Find.Selector
   ) {
-    // hook up the pouchdb findDocs plugin (mango queries)
-    PouchDB.plugin(PouchfindDocs);
+    // hook up the pouchdb find plugin (mango queries)
+    PouchDB.plugin(PouchFind);
 
     // use either the provided address or a default
     this._remoteAddress = remoteCouchDB || "http://localhost:5984/delete_me";
@@ -67,10 +67,10 @@ export class rxPouch {
 
     if (mangoSelector) {
       this._localDB.createIndex(mangoIndex);
-      this._localDB.findDocs({
+      this._localDB.find({
         selector: mangoSelector
       });
-      this._remoteDB.findDocs({
+      this._remoteDB.find({
         selector: mangoSelector
       });
     }
@@ -229,7 +229,7 @@ export class rxPouch {
   }
 
   findDocs = (mango: {}): Observable<any> =>
-    from(this._localDB.findDocs(mango))
+    from(this._localDB.find(mango))
       // just want the docs
       .pipe(pluck('docs'));
 
