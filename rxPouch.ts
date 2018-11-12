@@ -1,6 +1,5 @@
 import PouchDB from "pouchdb";
 import PouchFind from "pouchdb-find";
-import { beautifulJSON } from "./beautifulJSON";
 import {
   Observable,
   fromEvent,
@@ -25,7 +24,7 @@ import {
   concatMap,
   delay
 } from "rxjs/operators";
-import * as isNode from "detect-node";
+import isNode from "detect-node";
 import { v4 } from 'uuid';
 
 export class rxPouch {
@@ -93,7 +92,7 @@ export class rxPouch {
         merge(fromEvent(this._syncDown, 'error')),
         delay(5000),
       )
-      .subscribe(x => console.log(beautifulJSON(x)));
+      .subscribe(x => console.log(x));
 
     this._changes$ = fromEvent(
       this._localDB.changes({
@@ -104,19 +103,21 @@ export class rxPouch {
       "change"
     );
 
-    this._paused$ = fromEvent(this._syncUp, "paused").pipe(
-      merge(this._changes$),
-      merge(fromEvent(this._syncUp, "active")),
-      merge(fromEvent(this._syncDown, "paused")),
-      merge(fromEvent(this._syncDown, "active")),
-      // on NodeJS the paused event doesnt fire
-      // when remoteDB goes offline
-      // so check every few secs
-      merge(interval(5000)),
-      // this also prevents febrile
-      // firing from all of the listeners at once
-      debounceTime(1000)
-    );
+    this._paused$ = fromEvent(this._syncUp, "paused")
+      .pipe(
+        // lump all of these together
+        merge(this._changes$),
+        merge(fromEvent(this._syncUp, "active")),
+        merge(fromEvent(this._syncDown, "paused")),
+        merge(fromEvent(this._syncDown, "active")),
+        // on NodeJS the paused event doesnt fire
+        // when remoteDB goes offline
+        // so check every few secs
+        merge(interval(5000)),
+        // this also prevents febrile
+        // firing from all of the listeners at once
+        debounceTime(1000)
+      );
 
     this._allDocs$ = (): Observable<any> => {
       return from(
