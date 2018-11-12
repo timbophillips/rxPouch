@@ -212,7 +212,7 @@ console.log("new rxPouch.... which I think must be synchronous code");
 let z = new rxPouch(
   "http://localhost:5984/tasks",
   // { index: { fields: ["patient_name"] } },
-  // { patient_name: "uuuusss" }
+  // { patient_name: "john" }
 );
 console.log("started...");
 
