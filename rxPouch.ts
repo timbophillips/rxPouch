@@ -93,6 +93,9 @@ class rxPouch {
       "change"
     );
 
+    // log replication errors
+    fromEvent(this._syncUp, 'error').pipe(merge(fromEvent(this._syncDown, 'error'))).subscribe(x => console.log(beautifulJSON(x)));
+
     this._paused$ = fromEvent(this._syncUp, "paused").pipe(
       merge(this._changes$),
       merge(fromEvent(this._syncUp, "active")),
@@ -136,6 +139,10 @@ class rxPouch {
           timeout(1000),
           map(x => {
             const y = x as Array<any>;
+            // console.log("=====internal=====")
+            // console.log(beautifulJSON(y[0]));
+            // console.log("=====external=====")
+            // console.log(beautifulJSON(y[1]));
             if (y[0].doc_count && y[1].doc_count) {
               return y[0].doc_count / y[1].doc_count;
             } else {
