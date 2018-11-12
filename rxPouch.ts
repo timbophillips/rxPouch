@@ -1,5 +1,5 @@
 import PouchDB from "pouchdb";
-import PouchFind from "pouchdb-find";
+import PouchfindDocs from "pouchdb-findDocs";
 import { beautifulJSON } from "./beautifulJSON";
 import {
   Observable,
@@ -8,7 +8,8 @@ import {
   forkJoin,
   of,
   interval,
-  combineLatest
+  combineLatest,
+  throwError
 } from "rxjs";
 import {
   map,
@@ -19,12 +20,15 @@ import {
   timeout,
   bufferWhen,
   debounceTime,
-  distinctUntilChanged
+  distinctUntilChanged,
+  switchMap,
+  concatMap,
+  delay
 } from "rxjs/operators";
 import * as isNode from "detect-node";
-import {v4} from 'uuid';
+import { v4 } from 'uuid';
 
-class rxPouch {
+export class rxPouch {
   private _remoteAddress: string;
   private _localName: string | undefined;
   private _remoteDB: any;
@@ -38,11 +42,11 @@ class rxPouch {
 
   constructor(
     remoteCouchDB?: string,
-    mangoIndex?: PouchDB.Find.CreateIndexOptions,
-    mangoSelector?: PouchDB.Find.Selector
+    mangoIndex?: PouchDB.findDocs.CreateIndexOptions,
+    mangoSelector?: PouchDB.findDocs.Selector
   ) {
-    // hook up the pouchdb find plugin (mango queries)
-    PouchDB.plugin(PouchFind);
+    // hook up the pouchdb findDocs plugin (mango queries)
+    PouchDB.plugin(PouchfindDocs);
 
     // use either the provided address or a default
     this._remoteAddress = remoteCouchDB || "http://localhost:5984/delete_me";
@@ -63,14 +67,12 @@ class rxPouch {
 
     if (mangoSelector) {
       this._localDB.createIndex(mangoIndex);
-      console.log("index done");
-      this._localDB.find({
+      this._localDB.findDocs({
         selector: mangoSelector
       });
-      this._remoteDB.find({
+      this._remoteDB.findDocs({
         selector: mangoSelector
       });
-      console.log(mangoIndex + " | " + mangoSelector);
     }
 
     this._syncDown = PouchDB.replicate(this._remoteDB, this._localDB, {
@@ -95,7 +97,12 @@ class rxPouch {
     );
 
     // log replication errors
-    fromEvent(this._syncUp, 'error').pipe(merge(fromEvent(this._syncDown, 'error'))).subscribe(x => console.log(beautifulJSON(x)));
+    fromEvent(this._syncUp, 'error')
+      .pipe(
+        merge(fromEvent(this._syncDown, 'error')),
+        delay(5000),
+      )
+      .subscribe(x => console.log(beautifulJSON(x)));
 
     this._paused$ = fromEvent(this._syncUp, "paused").pipe(
       merge(this._changes$),
@@ -120,8 +127,8 @@ class rxPouch {
       ).pipe(
         pluck("rows"),
         map(x => {
-          let y = x as Array<any>;
-          return y.map(z => z["doc"]).filter(a => a._id.substr(0, 2) !== "_d");
+          // let y = x as Array<any>;
+          return (x as Array<any>).map(z => z["doc"]).filter(a => a._id.substr(0, 2) !== "_d");
         })
       );
     };
@@ -140,10 +147,6 @@ class rxPouch {
           timeout(1000),
           map(x => {
             const y = x as Array<any>;
-            // console.log("=====internal=====")
-            // console.log(beautifulJSON(y[0]));
-            // console.log("=====external=====")
-            // console.log(beautifulJSON(y[1]));
             if (y[0].doc_count && y[1].doc_count) {
               return y[0].doc_count / y[1].doc_count;
             } else {
@@ -179,7 +182,7 @@ class rxPouch {
     // return a JSON object the current docs
     // and the current sync code
     // when either streams updates
-    return combineLatest(z.rxDocs, z.rxSync).pipe(
+    return combineLatest(this.rxDocs, this.rxSync).pipe(
       mergeMap(x => {
         let syncText = "";
         switch (true) {
@@ -205,34 +208,31 @@ class rxPouch {
     );
   }
 
-
   putDoc = (doc: any): Observable<any> => {
     if (!doc._id) { doc._id = v4(); }
-    return from(this._localDB.put(JSON.parse(JSON.stringify(doc))));
+    return from(this._localDB.put(JSON.parse(JSON.stringify(doc))))
+  };
+
+  getDoc = (_id: string): Observable<any> => {
+    return from(this._localDB.get(_id))
   }
+
+  deleteDoc = (_id: string): Observable<any> => {
+    return this.getDoc(_id)
+      .pipe(
+        map(docToDelete => {
+          if (!docToDelete.error) { docToDelete._deleted = true }
+          return docToDelete;
+        }),
+        concatMap(docFlagged => this.putDoc(docFlagged))
+      );
+  }
+
+  findDocs = (mango: {}): Observable<any> =>
+    from(this._localDB.findDocs(mango))
+      // just want the docs
+      .pipe(pluck('docs'));
+
+  createIndex = (mango: {}): Observable<any> =>
+    from(this._localDB.createIndex(mango));
 }
-
-/// test code
-
-// instantiate the class
-console.log("new rxPouch.... which I think must be synchronous code");
-let z = new rxPouch(
-  "http://localhost:5984/tasks",
-  // { index: { fields: ["patient_name"] } },
-  // { patient_name: "john" }
-);
-console.log("started...");
-
-z.log.subscribe(x => {
-  console.clear();
-  console.log(beautifulJSON(x));
-});
-
-const testPut = (doc: object) => {
-  z.putDoc(doc).subscribe(x => console.log(beautifulJSON(x)))
-}
-
-setTimeout(testPut, 10000, {
-  name: 'Tim Phillips'
-});
-
