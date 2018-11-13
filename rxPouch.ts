@@ -1,5 +1,5 @@
-import PouchDB from "pouchdb";
-import PouchFind from "pouchdb-find";
+import PouchDB from 'pouchdb';
+import PouchFind from 'pouchdb-find';
 import {
   Observable,
   fromEvent,
@@ -9,7 +9,7 @@ import {
   interval,
   combineLatest,
   throwError
-} from "rxjs";
+} from 'rxjs';
 import {
   map,
   pluck,
@@ -23,9 +23,11 @@ import {
   switchMap,
   concatMap,
   delay
-} from "rxjs/operators";
-import isNode from "detect-node";
+} from 'rxjs/operators';
+import isNode from 'detect-node';
 import { v4 } from 'uuid';
+
+import { beautifulJSON } from './beautifulJSON';
 
 export class rxPouch {
   private _remoteAddress: string;
@@ -41,6 +43,7 @@ export class rxPouch {
 
   constructor(
     remoteCouchDB?: string,
+    localCouchDBName?: string,
     mangoIndex?: PouchDB.Find.CreateIndexOptions,
     mangoSelector?: PouchDB.Find.Selector
   ) {
@@ -48,21 +51,23 @@ export class rxPouch {
     PouchDB.plugin(PouchFind);
 
     // use either the provided address or a default
-    this._remoteAddress = remoteCouchDB || "http://localhost:5984/delete_me";
+    this._remoteAddress = remoteCouchDB || 'http://localhost:5984/delete_me';
 
     // JS trickery to get last bit of URL
     // (which is the database name)
-    let parts = this._remoteAddress.split("/");
-    this._localName = parts.pop() || parts.pop(); // handle potential trailing slash
+    let parts = this._remoteAddress.split('/');
+    this._localName = localCouchDBName || parts.pop() || parts.pop(); // handle potential trailing slash
 
     // if this is running in NodeJS then put in subfolder
     // not essential just being tidy
     if (isNode) {
-      this._localName = "pouchdb-data/" + this._localName;
+      this._localName = 'pouchdb-data/' + this._localName;
     }
 
     this._remoteDB = new PouchDB(this._remoteAddress);
-    this._localDB = new PouchDB(this._localName);
+    this._localDB = new PouchDB(this._localName).on('error', (error: any) =>
+      console.log(beautifulJSON(error))
+    );
 
     if (mangoSelector) {
       this._localDB.createIndex(mangoIndex);
@@ -90,34 +95,33 @@ export class rxPouch {
     fromEvent(this._syncUp, 'error')
       .pipe(
         merge(fromEvent(this._syncDown, 'error')),
-        delay(5000),
+        delay(5000)
       )
       .subscribe(x => console.log(x));
 
     this._changes$ = fromEvent(
       this._localDB.changes({
-        since: "now",
+        since: 'now',
         live: true,
         include_docs: false
       }),
-      "change"
+      'change'
     );
 
-    this._paused$ = fromEvent(this._syncUp, "paused")
-      .pipe(
-        // lump all of these together
-        merge(this._changes$),
-        merge(fromEvent(this._syncUp, "active")),
-        merge(fromEvent(this._syncDown, "paused")),
-        merge(fromEvent(this._syncDown, "active")),
-        // on NodeJS the paused event doesnt fire
-        // when remoteDB goes offline
-        // so check every few secs
-        merge(interval(5000)),
-        // this also prevents febrile
-        // firing from all of the listeners at once
-        debounceTime(1000)
-      );
+    this._paused$ = fromEvent(this._syncUp, 'paused').pipe(
+      // lump all of these together
+      merge(this._changes$),
+      merge(fromEvent(this._syncUp, 'active')),
+      merge(fromEvent(this._syncDown, 'paused')),
+      merge(fromEvent(this._syncDown, 'active')),
+      // on NodeJS the paused event doesnt fire
+      // when remoteDB goes offline
+      // so check every few secs
+      merge(interval(5000)),
+      // this also prevents febrile
+      // firing from all of the listeners at once
+      debounceTime(1000)
+    );
 
     this._allDocs$ = (): Observable<any> => {
       return from(
@@ -127,14 +131,14 @@ export class rxPouch {
         })
       ).pipe(
         // just the rows
-        pluck("rows"),
+        pluck('rows'),
         // just the docs
         map(x =>
           (x as Array<any>)
             //just the docs
-            .map(z => z["doc"])
+            .map(z => z['doc'])
             //filter out any views / indices
-            .filter(a => a._id.substr(0, 2) !== "_d")
+            .filter(a => a._id.substr(0, 2) !== '_d')
         )
       );
     };
@@ -144,25 +148,24 @@ export class rxPouch {
     // -2 is some other error returned by PouchDb info
     this._syncCheck$ = (): Observable<number | {}> => {
       // if both objects exist then make an Observable from their info() methods
-      return forkJoin(this._localDB.info(), this._remoteDB.info())
-        .pipe(
-          // in NodeJS _remoteDB.info will not complete promise if offline
-          // treat anything that takes more than a second as offline
-          timeout(1000),
-          // forkjoin spits out an array of the two results
-          map(x => {
-            const y = x as Array<any>;
-            if (y[0].doc_count && y[1].doc_count) {
-              // return the ratio of local : remote doc count
-              return y[0].doc_count / y[1].doc_count;
-            } else {
-              //must be offline
-              return -1;
-            }
-          }),
-          // some other error also means offline
-          catchError((error, caught) => of(-2))
-        );
+      return forkJoin(this._localDB.info(), this._remoteDB.info()).pipe(
+        // in NodeJS _remoteDB.info will not complete promise if offline
+        // treat anything that takes more than a second as offline
+        timeout(1000),
+        // forkjoin spits out an array of the two results
+        map(x => {
+          const y = x as Array<any>;
+          if (y[0].doc_count && y[1].doc_count) {
+            // return the ratio of local : remote doc count
+            return y[0].doc_count / y[1].doc_count;
+          } else {
+            //must be offline
+            return -1;
+          }
+        }),
+        // some other error also means offline
+        catchError((error, caught) => of(-2))
+      );
     };
   }
 
@@ -192,61 +195,62 @@ export class rxPouch {
   get log(): Observable<{}> {
     // combineLatest will emit the latest of each
     // whenever either of them updates
-    return combineLatest(this.rxDocs, this.rxSync)
-      .pipe(
-        mergeMap(x => {
-          // human readable text to explain sync number
-          let syncText = "remote couchDB ";
-          switch (true) {
-            case x[1] < 0:
-              syncText += "offline";
-              break;
-            case x[1] === 1:
-              syncText += "online and in sync";
-              break;
-            case x[1] > 1:
-              syncText += "uploading";
-              break;
-            default:
-              syncText += "downloading";
-              break;
-          }
-          // assemble a nice JSON object that
-          // has the docs and then the sync stuff
-          return of<{}>({
-            "PouchDB docs array": x[0],
-            "sync code": x[1].toString(),
-            "sync description": syncText
-          });
-        })
-      );
+    return combineLatest(this.rxDocs, this.rxSync).pipe(
+      mergeMap(x => {
+        // human readable text to explain sync number
+        let syncText = 'remote couchDB ';
+        switch (true) {
+          case x[1] < 0:
+            syncText += 'offline';
+            break;
+          case x[1] === 1:
+            syncText += 'online and in sync';
+            break;
+          case x[1] > 1:
+            syncText += 'uploading';
+            break;
+          default:
+            syncText += 'downloading';
+            break;
+        }
+        // assemble a nice JSON object that
+        // has the docs and then the sync stuff
+        return of<{}>({
+          'PouchDB docs array': x[0],
+          'sync code': x[1].toString(),
+          'sync description': syncText
+        });
+      })
+    );
   }
 
   putDoc = (doc: any): Observable<any> => {
     // add a random uuid as the _id if none supplied
-    if (!doc._id) { doc._id = v4(); }
-    return from(this._localDB.put(
-      // this bit to guard against funny
-      // stuff being supplied that isnt 
-      // JSON compliant
-      JSON.parse(JSON.stringify(doc))
-    ))
+    if (!doc._id) {
+      doc._id = v4();
+    }
+    return from(
+      this._localDB.put(
+        // this bit to guard against funny
+        // stuff being supplied that isnt
+        // JSON compliant
+        JSON.parse(JSON.stringify(doc))
+      )
+    );
   };
 
   // straight conversion and re-issue of the PouchDB promise
-  getDoc = (_id: string): Observable<any> =>
-    from(this._localDB.get(_id));
+  getDoc = (_id: string): Observable<any> => from(this._localDB.get(_id));
 
   deleteDoc = (_id: string): Observable<any> => {
     // grab the document
-    return this.getDoc(_id)
-      .pipe(
-        // add the _deleted flag to the document
-        map(docToDelete => Object.assign(docToDelete, { _deleted: true })),
-        // put this flagged document (Pouch/Couch will delete it)
-        concatMap(docFlagged => this.putDoc(docFlagged))
-      );
-  }
+    return this.getDoc(_id).pipe(
+      // add the _deleted flag to the document
+      map(docToDelete => Object.assign(docToDelete, { _deleted: true })),
+      // put this flagged document (Pouch/Couch will delete it)
+      concatMap(docFlagged => this.putDoc(docFlagged))
+    );
+  };
 
   findDocs = (mango: {}): Observable<any> =>
     from(this._localDB.find(mango))
