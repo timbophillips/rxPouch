@@ -27,9 +27,7 @@ import {
 import isNode from 'detect-node';
 import { v4 } from 'uuid';
 
-import { beautifulJSON } from './beautifulJSON';
-
-export class rxPouch {
+export class RxPouch {
   private _remoteAddress: string;
   private _localName: string | undefined;
   private _remoteDB: any;
@@ -55,7 +53,7 @@ export class rxPouch {
 
     // JS trickery to get last bit of URL
     // (which is the database name)
-    let parts = this._remoteAddress.split('/');
+    const parts = this._remoteAddress.split('/');
     this._localName = localCouchDBName || parts.pop() || parts.pop(); // handle potential trailing slash
 
     // if this is running in NodeJS then put in subfolder
@@ -65,9 +63,7 @@ export class rxPouch {
     }
 
     this._remoteDB = new PouchDB(this._remoteAddress);
-    this._localDB = new PouchDB(this._localName).on('error', (error: any) =>
-      console.log(beautifulJSON(error))
-    );
+    this._localDB = new PouchDB(this._localName);
 
     if (mangoSelector) {
       this._localDB.createIndex(mangoIndex);
@@ -135,9 +131,9 @@ export class rxPouch {
         // just the docs
         map(x =>
           (x as Array<any>)
-            //just the docs
+            // just the docs
             .map(z => z['doc'])
-            //filter out any views / indices
+            // filter out any views / indices
             .filter(a => a._id.substr(0, 2) !== '_d')
         )
       );
@@ -159,7 +155,7 @@ export class rxPouch {
             // return the ratio of local : remote doc count
             return y[0].doc_count / y[1].doc_count;
           } else {
-            //must be offline
+            // must be offline
             return -1;
           }
         }),
@@ -237,7 +233,7 @@ export class rxPouch {
         JSON.parse(JSON.stringify(doc))
       )
     );
-  };
+  }
 
   // straight conversion and re-issue of the PouchDB promise
   getDoc = (_id: string): Observable<any> => from(this._localDB.get(_id));
@@ -250,13 +246,13 @@ export class rxPouch {
       // put this flagged document (Pouch/Couch will delete it)
       concatMap(docFlagged => this.putDoc(docFlagged))
     );
-  };
+  }
 
   findDocs = (mango: {}): Observable<any> =>
     from(this._localDB.find(mango))
       // just want the docs
-      .pipe(pluck('docs'));
+      .pipe(pluck('docs'))
 
   createIndex = (mango: {}): Observable<any> =>
-    from(this._localDB.createIndex(mango));
+    from(this._localDB.createIndex(mango))
 }

@@ -12,11 +12,11 @@ import {
     take,
     mergeMap
 } from "rxjs/operators";
-import { rxPouch } from './rxPouch';
+import { RxPouch } from './rxPouch';
 
 // instantiate the class
-let z = new rxPouch(
-    "http://localhost:5984/tasks", "tasks2"
+let z = new RxPouch(
+    "http://localhost:5984/tasks3", "tasks3b"
     // { index: { fields: ["patient_name"] } },
     // { patient_name: "john" }
 );
@@ -72,7 +72,7 @@ const testMakeWholeBunchThenFindThenDelete = () => {
     
     .pipe(
         take(5),
-        mergeMap(x => z.putDoc({ name: '*****this one should be deleted in 5 seconds, with his mates', rank: 'tick tock tick tock' })),
+        mergeMap(x => z.putDoc({ patient_name: '*****this one should be deleted in 5 seconds, with his mates', logged_by: 'tick tock tick tock' })),
         delay(5000),
         map(y => y.id),
         mergeMap(d => z.deleteDoc(d))

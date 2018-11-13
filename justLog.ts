@@ -1,9 +1,9 @@
 import { beautifulJSON } from "./beautifulJSON";
-import { rxPouch } from './rxPouch';
+import { RxPouch } from './rxPouch';
 
 // instantiate the class
-let z = new rxPouch(
-    "http://localhost:5984/tasks",
+let z = new RxPouch(
+    "http://localhost:5984/tasks3",
 );
 
 // output the log

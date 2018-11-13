@@ -10,12 +10,12 @@ import {
     map,
     pluck
 } from "rxjs/operators";
-import { rxPouch } from './rxPouch';
+import { RxPouch } from './rxPouch';
 
 /// test code
 
 // instantiate the class
-let z = new rxPouch(
+let z = new RxPouch(
     "http://localhost:5984/tasks",
     // { index: { fields: ["patient_name"] } },
     // { patient_name: "john" }
