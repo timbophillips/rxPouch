@@ -32,12 +32,10 @@ export class RxPouch {
   private _localName: string | undefined;
   private _remoteDB: any;
   private _localDB: any;
-  private _allDocs$: any;
   private _changes$: Observable<any>;
   private _paused$: Observable<any>;
   private _syncUp: any;
   private _syncDown: any;
-  private _syncCheck$: any;
 
   constructor(
     remoteCouchDB?: string,
@@ -62,9 +60,11 @@ export class RxPouch {
       this._localName = 'pouchdb-data/' + this._localName;
     }
 
+    // start PouchDB instances, one for local one for remote
     this._remoteDB = new PouchDB(this._remoteAddress);
     this._localDB = new PouchDB(this._localName);
 
+    // if mango index & selector provided for filtered replication
     if (mangoSelector) {
       this._localDB.createIndex(mangoIndex);
       this._localDB.find({
@@ -75,12 +75,14 @@ export class RxPouch {
       });
     }
 
+    // bilaterl sync arm one (separate in case individualised changes needed)
     this._syncDown = PouchDB.replicate(this._remoteDB, this._localDB, {
       live: true,
       retry: true,
       selector: mangoSelector
     });
 
+    // bilaterl sync arm two (separate in case individualised changes needed)
     this._syncUp = PouchDB.replicate(this._localDB, this._remoteDB, {
       live: true,
       retry: true,
@@ -95,6 +97,7 @@ export class RxPouch {
       )
       .subscribe(x => console.log(x));
 
+    // hook up changes event
     this._changes$ = fromEvent(
       this._localDB.changes({
         since: 'now',
@@ -104,6 +107,7 @@ export class RxPouch {
       'change'
     );
 
+    // hook up paused event
     this._paused$ = fromEvent(this._syncUp, 'paused').pipe(
       // lump all of these together
       merge(this._changes$),
@@ -118,51 +122,69 @@ export class RxPouch {
       // firing from all of the listeners at once
       debounceTime(1000)
     );
+  }
 
-    this._allDocs$ = (): Observable<any> => {
-      return from(
-        this._localDB.allDocs({
-          include_docs: true,
-          attachments: false
-        })
-      ).pipe(
-        // just the rows
-        pluck('rows'),
-        // just the docs
-        map(x =>
-          (x as Array<any>)
-            // just the docs
-            .map(z => z['doc'])
-            // filter out any views / indices
-            .filter(a => a._id.substr(0, 2) !== '_d')
-        )
-      );
-    };
+  private _allDocs$ = (): Observable<any> => {
+    return from(
+      this._localDB.allDocs({
+        include_docs: true,
+        attachments: false
+      })
+    ).pipe(
+      // just the rows
+      pluck('rows'),
+      // just the docs
+      map(x =>
+        (x as Array<any>)
+          // just the docs
+          .map(z => z['doc'])
+          // filter out any views / indices
+          .filter(a => a._id.substr(0, 2) !== '_d')
+          // add in a field with the attachment URL
+          .map(y => this.fixAttachment(y)),
+      )
+    );
+  }
 
-    // check if local and remote database are online and in sync
-    // returns -1 if offline, >0  for sync. (1 = 100%)
-    // -2 is some other error returned by PouchDb info
-    this._syncCheck$ = (): Observable<number | {}> => {
-      // if both objects exist then make an Observable from their info() methods
-      return forkJoin(this._localDB.info(), this._remoteDB.info()).pipe(
-        // in NodeJS _remoteDB.info will not complete promise if offline
-        // treat anything that takes more than a second as offline
-        timeout(1000),
-        // forkjoin spits out an array of the two results
-        map(x => {
-          const y = x as Array<any>;
-          if (y[0].doc_count && y[1].doc_count) {
-            // return the ratio of local : remote doc count
-            return y[0].doc_count / y[1].doc_count;
-          } else {
-            // must be offline
-            return -1;
-          }
-        }),
-        // some other error also means offline
-        catchError((error, caught) => of(-2))
-      );
-    };
+  private fixAttachment(doc: any): any {
+    // this is to use the _attachments field from CouchDB
+    // and create a local url which will depend on the
+    // couchDB url etc etc and add it as the attachmentUrl
+    // (note no underscore or plural) field
+    if (doc._attachments) {
+      return Object.assign({}, doc, {
+        'attachmentUrl':
+          this._remoteAddress + '/' + doc._id + '/' +
+          Object.keys(doc._attachments)[0]
+      });
+    } else {
+      return doc;
+    }
+  }
+
+  // check if local and remote database are online and in sync
+  // returns -1 if offline, >0  for sync. (1 = 100%)
+  // -2 is some other error returned by PouchDb info
+  private _syncCheck$ = (): Observable<number | {}> => {
+    // if both objects exist then make an Observable from their info() methods
+    return forkJoin(this._localDB.info(), this._remoteDB.info()).pipe(
+      // in NodeJS _remoteDB.info will not complete promise if offline
+      // treat anything that takes more than a second as offline
+      timeout(1000),
+      // forkjoin spits out an array of the two results
+      map(x => {
+        const y = x as Array<any>;
+        if (y[0].doc_count && y[1].doc_count) {
+          // return the ratio of local : remote doc count
+          return y[0].doc_count / y[1].doc_count;
+        } else {
+          // must be offline
+          return -1;
+        }
+      }),
+      // some other error also means offline
+      catchError((error, caught) => of(-2))
+    );
   }
 
   get rxDocs(): Observable<any> {
