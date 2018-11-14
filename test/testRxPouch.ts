@@ -11,12 +11,18 @@ import {
     pluck
 } from "rxjs/operators";
 import { RxPouch } from '../lib';
+import isNode from 'detect-node';
+import * as os from 'os';
+import * as path from 'path';
 
-/// test code
+let localName = 'tasks3b';
+let remoteName = 'http://localhost:5984/tasks3';
 
+let localPathName = isNode ? path.join(os.tmpdir(), localName) : localName;
+console.log(localPathName);
 // instantiate the class
 let z = new RxPouch(
-    "http://localhost:5984/tasks",
+    remoteName, localPathName,
     // { index: { fields: ["patient_name"] } },
     // { patient_name: "john" }
 );

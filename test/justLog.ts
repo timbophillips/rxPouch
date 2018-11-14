@@ -1,9 +1,17 @@
 import { beautifulJSON } from "beautifulJSON";
 import { RxPouch } from '../lib';
+import isNode from 'detect-node';
+import * as os from 'os';
+import * as path from 'path';
 
+let localName = 'temp-pouch';
+let remoteName = 'http://localhost:5984/tasks3';
+
+let localPathName = isNode? path.join(os.tmpdir(), localName) : localName;
+console.log(localPathName);
 // instantiate the class
 let z = new RxPouch(
-    "http://localhost:5984/tasks3",
+    remoteName,localPathName,
 );
 
 // output the log

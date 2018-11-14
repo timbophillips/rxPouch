@@ -24,10 +24,7 @@ import {
   concatMap,
   delay
 } from 'rxjs/operators';
-import isNode from 'detect-node';
 import { v4 } from 'uuid';
-// import * as os from 'os';
-// import * as path from 'path';
 
 export class RxPouch {
   private _remoteAddress: string;
@@ -57,11 +54,6 @@ export class RxPouch {
     this._localName =
       localCouchDBName || parts.pop() || parts.pop() || 'unnamed'; // handle potential trailing slash
 
-    // if this is running in NodeJS then put in subfolder
-    // not essential just being tidy
-    // if (isNode) {
-    //   this._localName = path.join(os.tmpdir(), this._localName);
-    // }
 
     // start PouchDB instances, one for local one for remote
     this._remoteDB = new PouchDB(this._remoteAddress);
