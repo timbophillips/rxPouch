@@ -1,1 +1,1 @@
-# pouchdb-rxjs-node
+rxPouch
