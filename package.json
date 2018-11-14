@@ -12,6 +12,7 @@
     "@types/detect-node": "^2.0.0",
     "@types/pouchdb": "^6.3.2",
     "@types/uuid": "^3.4.4",
+    "beautifuljson": "github:timbophillips/beautifulJSON",
     "chalk": "^2.4.1",
     "detect-node": "^2.0.4",
     "json-colorizer": "^1.1.1",

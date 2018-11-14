@@ -1,6 +1,6 @@
-import { beautifulJSON } from "./beautifulJSON";
+import { beautifulJSON } from "beautifulJSON";
 import {
-    of, interval,
+    of,
 } from "rxjs";
 import {
     catchError,
@@ -8,18 +8,23 @@ import {
     delay,
     concat,
     map,
-    pluck,
-    take,
-    mergeMap
+    pluck
 } from "rxjs/operators";
-import { RxPouch } from './rxPouch';
+import { RxPouch } from '../lib';
+
+/// test code
 
 // instantiate the class
 let z = new RxPouch(
-    "http://localhost:5984/tasks3", "tasks3b"
+    "http://localhost:5984/tasks",
     // { index: { fields: ["patient_name"] } },
     // { patient_name: "john" }
 );
+
+z.log.subscribe(x => {
+    console.clear();
+    console.log(beautifulJSON(x));
+});
 
 const testPut = (doc: object) => {
     z.putDoc(doc).subscribe(x => {
@@ -67,19 +72,6 @@ const testCreateThenDelete = () => {
         .subscribe(x => console.log(beautifulJSON(x)))
 }
 
-const testMakeWholeBunchThenFindThenDelete = () => {
-    interval(1000)
-    
-    .pipe(
-        take(5),
-        mergeMap(x => z.putDoc({ patient_name: '*****this one should be deleted in 5 seconds, with his mates', logged_by: 'tick tock tick tock' })),
-        delay(5000),
-        map(y => y.id),
-        mergeMap(d => z.deleteDoc(d))
-    )
-
-    .subscribe(a => console.log(beautifulJSON(a)));
-}
 
 const testFindAndDeleteThem = () => {
     // create the index
@@ -103,12 +95,11 @@ const testFindAndDeleteThem = () => {
         .subscribe(x => console.log(beautifulJSON(x)))
 }
 
-// setTimeout(testPut, 500, {
-//     name: 'yes another batch of new ones created 500ms after start'
-// });
+setTimeout(testPut, 500, {
+    name: 'yes another batch of new ones created 500ms after start'
+});
 
-// setTimeout(testCreateThenDelete, 2000);
+setTimeout(testCreateThenDelete, 2000);
 
-// setTimeout(testFindAndDeleteThem, 5000)
+setTimeout(testFindAndDeleteThem, 5000)
 
-testMakeWholeBunchThenFindThenDelete();

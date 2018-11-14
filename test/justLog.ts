@@ -1,5 +1,5 @@
-import { beautifulJSON } from "./beautifulJSON";
-import { RxPouch } from './rxPouch';
+import { beautifulJSON } from "beautifulJSON";
+import { RxPouch } from '../lib';
 
 // instantiate the class
 let z = new RxPouch(
@@ -11,4 +11,3 @@ z.log.subscribe(x => {
     console.clear();
     console.log(beautifulJSON(x));
 });
-
