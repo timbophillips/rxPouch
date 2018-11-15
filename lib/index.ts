@@ -147,7 +147,7 @@ export class RxPouch {
     // couchDB url etc etc and add it as the attachmentUrl
     // (note no underscore or plural) field
     if (doc._attachments) {
-      return Object.assign({}, doc, {
+      return (<any>Object).assign({}, doc, {
         attachmentUrl:
           this._remoteAddress +
           '/' +
@@ -262,7 +262,7 @@ export class RxPouch {
     // grab the document
     return this.getDoc(_id).pipe(
       // add the _deleted flag to the document
-      map(docToDelete => Object.assign(docToDelete, { _deleted: true })),
+      map(docToDelete => (<any>Object).assign(docToDelete, { _deleted: true })),
       // put this flagged document (Pouch/Couch will delete it)
       concatMap(docFlagged => this.putDoc(docFlagged))
     );

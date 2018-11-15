@@ -1,24 +1,24 @@
 {
   "name": "sand2",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "RxJS and Typescript based wrapper for PouchDB - primarily for use in Angular",
+  "main": "dist/index.js",
   "scripts": {
+    "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Tim Phillips timothy.john.phillips@gmail.com",
+  "license": "MIT",
   "dependencies": {
+    "beautifuljson": "github:timbophillips/beautifulJSON",
+    "pouchdb": "^7.0.0",
+    "pouchdb-find": "^7.0.0",
+    "rxjs": "^6.3.3"
+  },
+  "devDependencies": {
     "@types/detect-node": "^2.0.0",
     "@types/pouchdb": "^6.3.2",
     "@types/uuid": "^3.4.4",
-    "beautifuljson": "github:timbophillips/beautifulJSON",
-    "chalk": "^2.4.1",
-    "detect-node": "^2.0.4",
-    "json-colorizer": "^1.1.1",
-    "pouchdb": "^7.0.0",
-    "pouchdb-browser": "^7.0.0",
-    "pouchdb-find": "^7.0.0",
-    "rxjs": "^6.3.3"
+    "detect-node": "^2.0.4"
   }
 }
