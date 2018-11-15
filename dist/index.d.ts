@@ -1,4 +1,4 @@
-// /// <reference types="pouchdb-find" />
+/// <reference types="pouchdb-find" />
 import { Observable } from 'rxjs';
 export declare class RxPouch {
     private _remoteAddress;
