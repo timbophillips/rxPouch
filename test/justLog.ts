@@ -1,5 +1,5 @@
 import { beautifulJSON } from "beautifulJSON";
-import { RxPouch } from '../lib';
+import { RxPouch } from '../dist';
 import isNode from 'detect-node';
 import * as os from 'os';
 import * as path from 'path';
