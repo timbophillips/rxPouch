@@ -54,7 +54,6 @@ export class RxPouch {
     this._localName =
       localCouchDBName || parts.pop() || parts.pop() || 'unnamed'; // handle potential trailing slash
 
-
     // start PouchDB instances, one for local one for remote
     this._remoteDB = new PouchDB(this._remoteAddress);
     this._localDB = new PouchDB(this._localName);

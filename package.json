@@ -1,5 +1,5 @@
 {
-  "name": "sand2",
+  "name": "rxpouch",
   "version": "1.0.0",
   "description": "RxJS and Typescript based wrapper for PouchDB - primarily for use in Angular",
   "main": "dist/index.js",
@@ -7,7 +7,7 @@
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Tim Phillips timothy.john.phillips@gmail.com",
+  "author": "Tim Phillips <timothy.john.phillips@gmail.com>",
   "license": "MIT",
   "dependencies": {
     "beautifuljson": "github:timbophillips/beautifulJSON",
