@@ -10,12 +10,12 @@
   "author": "Tim Phillips <timothy.john.phillips@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "beautifuljson": "github:timbophillips/beautifulJSON",
     "pouchdb": "^7.0.0",
     "pouchdb-find": "^7.0.0",
     "rxjs": "^6.3.3"
   },
   "devDependencies": {
+    "beautifuljson": "github:timbophillips/beautifulJSON",
     "@types/detect-node": "^2.0.0",
     "@types/pouchdb": "^6.3.2",
     "@types/uuid": "^3.4.4",
