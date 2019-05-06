@@ -10,16 +10,16 @@
   "author": "Tim Phillips <timothy.john.phillips@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "@types/pouchdb-find": "^6.3.3",
-    "@types/pouchdb": "^6.3.2",
-    "pouchdb": "^7.0.0",
-    "pouchdb-find": "^7.0.0",
-    "rxjs": "^6.3.3"
-  },
-  "devDependencies": {
     "@types/detect-node": "^2.0.0",
+    "@types/pouchdb": "^6.3.3",
+    "@types/pouchdb-find": "^6.3.4",
     "@types/uuid": "^3.4.4",
     "beautifuljson": "github:timbophillips/beautifulJSON",
-    "detect-node": "^2.0.4"
-  }
+    "detect-node": "^2.0.4",
+    "pouchdb": "^7.0.0",
+    "pouchdb-find": "^7.0.0",
+    "rxjs": "^6.5.1",
+    "typescript": "^3.5.0-dev.20190504"
+  },
+  "devDependencies": {}
 }

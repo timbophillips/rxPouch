@@ -66,13 +66,7 @@ class RxPouch {
             operators_1.catchError((error, caught) => rxjs_1.of(-2)));
         };
         this.rxView = (design_view_name) => {
-            return rxjs_1.fromEvent(this._remoteDB.changes({
-                since: "now",
-                live: true,
-                include_docs: false,
-                view: design_view_name,
-                filter: "_view"
-            }), "change").pipe(operators_1.merge(rxjs_1.of(0)), operators_1.mergeMap(x => this._view$(design_view_name)), operators_1.distinctUntilChanged());
+            return this._view$(design_view_name);
         };
         this.putDoc = (doc) => {
             // add a random uuid as the _id if none supplied
