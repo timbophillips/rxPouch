@@ -14,4 +14,4 @@ let z = new RxPouch(
     remoteName,localPathName,
 );
 
-z.rxView("procedures").subscribe(x => console.log(beautifulJSON(x)));
+z.rxView("patients/umrns").subscribe(x => console.log(beautifulJSON(x)));
